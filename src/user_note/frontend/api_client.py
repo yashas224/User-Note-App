@@ -1,0 +1,71 @@
+import os
+
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1")
+
+_client = httpx.Client(base_url=API_BASE_URL, timeout=10)
+
+
+class APIError(Exception):
+    def __init__(self, status_code: int, message: str):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def _check(resp: httpx.Response) -> dict | list:
+    if resp.is_error:
+        try:
+            detail = resp.json().get("detail", "Request failed")
+        except ValueError:
+            detail = "Request failed"
+        if isinstance(detail, list):  # Pydantic validation errors
+            detail = "; ".join(e.get("msg", "") for e in detail)
+        raise APIError(resp.status_code, detail)
+    return resp.json()
+
+
+def _auth(token: str) -> dict:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def register(username: str, password: str) -> dict:
+    return _check(
+        _client.post(
+            "/auth/register", json={"username": username, "password": password}
+        )
+    )
+
+
+def login(username: str, password: str) -> str:
+    data = _check(
+        _client.post("/auth/login", json={"username": username, "password": password})
+    )
+    return data["access_token"]
+
+
+def me(token: str) -> dict:
+    return _check(_client.get("/auth/me", headers=_auth(token)))
+
+
+def list_notes(token: str) -> list[dict]:
+    return _check(_client.get("/notes", headers=_auth(token)))
+
+
+def create_note(
+    token: str, title: str, status: str, importance: str, body: str
+) -> dict:
+    return _check(
+        _client.post(
+            "/notes",
+            headers=_auth(token),
+            json={
+                "title": title,
+                "status": status,
+                "importance": importance,
+                "body": body,
+            },
+        )
+    )
