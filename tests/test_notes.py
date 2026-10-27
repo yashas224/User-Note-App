@@ -47,3 +47,73 @@ def test_users_only_see_own_notes(client, auth_headers):
 def test_invalid_payload_rejected(client, auth_headers, payload):
     resp = client.post("/api/v1/notes", json=payload, headers=auth_headers())
     assert resp.status_code == 422
+
+
+def _create(client, headers, **fields) -> dict:
+    payload = {"title": "Plan", **fields}
+    return client.post("/api/v1/notes", json=payload, headers=headers).json()
+
+
+def test_partial_update(client, auth_headers):
+    headers = auth_headers()
+    note = _create(client, headers, body="keep me")
+    resp = client.patch(
+        f"/api/v1/notes/{note['id']}",
+        json={"title": "New", "status": "completed"},
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    updated = resp.json()
+    assert updated["title"] == "New"
+    assert updated["status"] == "completed"
+    assert updated["body"] == "keep me"
+    assert updated["importance"] == "normal"
+    assert updated["updated_at"] > note["updated_at"]
+    assert client.get(f"/api/v1/notes/{note['id']}", headers=headers).json() == updated
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"status": "bogus"},
+        {"importance": "urgent"},
+        {"title": None},
+        {"title": ""},
+        {"owner_id": 99},
+    ],
+)
+def test_invalid_update_rejected(client, auth_headers, payload):
+    headers = auth_headers()
+    note = _create(client, headers)
+    resp = client.patch(f"/api/v1/notes/{note['id']}", json=payload, headers=headers)
+    assert resp.status_code == 422
+
+
+def test_soft_delete(client, auth_headers):
+    headers = auth_headers()
+    note = _create(client, headers)
+    url = f"/api/v1/notes/{note['id']}"
+    resp = client.delete(url, headers=headers)
+    assert resp.status_code == 204
+    assert resp.content == b""
+    assert client.get("/api/v1/notes", headers=headers).json() == []
+    assert client.get(url, headers=headers).status_code == 404
+    assert client.patch(url, json={"title": "x"}, headers=headers).status_code == 404
+    assert client.delete(url, headers=headers).status_code == 404
+
+
+def test_cannot_access_other_users_note(client, auth_headers):
+    alice, bob = auth_headers("alice"), auth_headers("bob")
+    note = _create(client, alice)
+    url = f"/api/v1/notes/{note['id']}"
+    assert client.get(url, headers=bob).status_code == 404
+    assert client.patch(url, json={"title": "x"}, headers=bob).status_code == 404
+    assert client.delete(url, headers=bob).status_code == 404
+    assert client.get(url, headers=alice).json() == note
+
+
+def test_update_delete_require_auth(client, auth_headers):
+    note = _create(client, auth_headers())
+    url = f"/api/v1/notes/{note['id']}"
+    assert client.patch(url, json={"title": "x"}).status_code == 401
+    assert client.delete(url).status_code == 401

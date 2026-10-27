@@ -27,6 +27,18 @@ class NoteCreate(BaseModel):
     importance: Importance = Importance.normal
 
 
+class NoteUpdate(BaseModel):
+    """Partial update. Defaults aren't validated, so omitted fields are allowed
+    but an explicit null is rejected."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(None, min_length=1, max_length=200)
+    status: Status = None
+    body: str = None
+    importance: Importance = None
+
+
 class NoteRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

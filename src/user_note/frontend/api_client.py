@@ -15,7 +15,7 @@ class APIError(Exception):
         self.status_code = status_code
 
 
-def _check(resp: httpx.Response) -> dict | list:
+def _check(resp: httpx.Response) -> dict | list | None:
     if resp.is_error:
         try:
             detail = resp.json().get("detail", "Request failed")
@@ -24,6 +24,8 @@ def _check(resp: httpx.Response) -> dict | list:
         if isinstance(detail, list):  # Pydantic validation errors
             detail = "; ".join(e.get("msg", "") for e in detail)
         raise APIError(resp.status_code, detail)
+    if resp.status_code == 204:
+        return None
     return resp.json()
 
 
@@ -69,3 +71,11 @@ def create_note(
             },
         )
     )
+
+
+def update_note(token: str, note_id: int, **fields) -> dict:
+    return _check(_client.patch(f"/notes/{note_id}", headers=_auth(token), json=fields))
+
+
+def delete_note(token: str, note_id: int) -> None:
+    _check(_client.delete(f"/notes/{note_id}", headers=_auth(token)))
