@@ -13,3 +13,4 @@ wheels/
 .env
 *.db
 *.DS_Store
+*notes.db
