@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-and-test.sh",
+            "timeout": 180,
+            "statusMessage": "isort + black + pytest..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && uv run isort --profile black --quiet . && uv run black --quiet . 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Formatting with isort + black..."
+          }
+        ]
+      }
+    ]
+  }
+}
