@@ -12,3 +12,4 @@ wheels/
 # Local config & data
 .env
 *.db
+*.DS_Store
