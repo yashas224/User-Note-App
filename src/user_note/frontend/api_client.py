@@ -52,8 +52,9 @@ def me(token: str) -> dict:
     return _check(_client.get("/auth/me", headers=_auth(token)))
 
 
-def list_notes(token: str) -> list[dict]:
-    return _check(_client.get("/notes", headers=_auth(token)))
+def list_notes(token: str, **filters) -> list[dict]:
+    params = {k: v for k, v in filters.items() if v is not None}
+    return _check(_client.get("/notes", headers=_auth(token), params=params))
 
 
 def create_note(
@@ -79,3 +80,34 @@ def update_note(token: str, note_id: int, **fields) -> dict:
 
 def delete_note(token: str, note_id: int) -> None:
     _check(_client.delete(f"/notes/{note_id}", headers=_auth(token)))
+
+
+def list_trash(token: str) -> list[dict]:
+    return _check(_client.get("/notes/trash", headers=_auth(token)))
+
+
+def restore_note(token: str, note_id: int) -> dict:
+    return _check(_client.post(f"/notes/{note_id}/restore", headers=_auth(token)))
+
+
+def create_share(token: str, note_id: int, expires_in_days: int | None) -> dict:
+    return _check(
+        _client.post(
+            f"/notes/{note_id}/shares",
+            headers=_auth(token),
+            json={"expires_in_days": expires_in_days},
+        )
+    )
+
+
+def list_shares(token: str, note_id: int) -> list[dict]:
+    return _check(_client.get(f"/notes/{note_id}/shares", headers=_auth(token)))
+
+
+def revoke_share(token: str, note_id: int, share_id: int) -> None:
+    _check(_client.delete(f"/notes/{note_id}/shares/{share_id}", headers=_auth(token)))
+
+
+def get_shared(share_token: str) -> dict:
+    """Public endpoint: deliberately sends no auth header."""
+    return _check(_client.get(f"/shared/{share_token}"))

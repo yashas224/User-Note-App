@@ -117,3 +117,81 @@ def test_update_delete_require_auth(client, auth_headers):
     url = f"/api/v1/notes/{note['id']}"
     assert client.patch(url, json={"title": "x"}).status_code == 401
     assert client.delete(url).status_code == 401
+
+
+def test_trash_and_restore(client, auth_headers):
+    headers = auth_headers()
+    note = _create(client, headers)
+    assert client.get("/api/v1/notes/trash", headers=headers).json() == []
+    client.delete(f"/api/v1/notes/{note['id']}", headers=headers)
+
+    trash = client.get("/api/v1/notes/trash", headers=headers).json()
+    assert [n["id"] for n in trash] == [note["id"]]
+
+    resp = client.post(f"/api/v1/notes/{note['id']}/restore", headers=headers)
+    assert resp.status_code == 200
+    assert client.get("/api/v1/notes/trash", headers=headers).json() == []
+    assert [n["id"] for n in client.get("/api/v1/notes", headers=headers).json()] == [
+        note["id"]
+    ]
+    # Restoring an active note is not a valid target.
+    resp = client.post(f"/api/v1/notes/{note['id']}/restore", headers=headers)
+    assert resp.status_code == 404
+
+
+def test_cannot_see_or_restore_other_users_trash(client, auth_headers):
+    alice, bob = auth_headers("alice"), auth_headers("bob")
+    note = _create(client, alice)
+    client.delete(f"/api/v1/notes/{note['id']}", headers=alice)
+    assert client.get("/api/v1/notes/trash", headers=bob).json() == []
+    resp = client.post(f"/api/v1/notes/{note['id']}/restore", headers=bob)
+    assert resp.status_code == 404
+
+
+def _titles(client, headers, **params) -> list[str]:
+    resp = client.get("/api/v1/notes", headers=headers, params=params)
+    assert resp.status_code == 200
+    return [n["title"] for n in resp.json()]
+
+
+def test_filters_search_and_sort(client, auth_headers):
+    headers = auth_headers()
+    for title, status, importance in [
+        ("Beta report", "draft", "critical"),
+        ("Alpha plan", "completed", "low"),
+        ("Gamma report", "draft", "normal"),
+    ]:
+        client.post(
+            "/api/v1/notes",
+            json={"title": title, "status": status, "importance": importance},
+            headers=headers,
+        )
+
+    assert _titles(client, headers, status="draft", sort_by="title", order="asc") == [
+        "Beta report",
+        "Gamma report",
+    ]
+    assert _titles(client, headers, importance="low") == ["Alpha plan"]
+    assert _titles(client, headers, search="REPORT", sort_by="title", order="asc") == [
+        "Beta report",
+        "Gamma report",
+    ]
+    assert _titles(client, headers, search="%") == []
+    # Importance sorts by severity, not alphabetically.
+    assert _titles(client, headers, sort_by="importance", order="desc") == [
+        "Beta report",
+        "Gamma report",
+        "Alpha plan",
+    ]
+    assert _titles(
+        client, headers, sort_by="title", order="asc", limit=1, offset=1
+    ) == ["Beta report"]
+
+
+@pytest.mark.parametrize(
+    "params",
+    [{"status": "bogus"}, {"sort_by": "owner_id"}, {"limit": 0}, {"offset": -1}],
+)
+def test_invalid_list_params_rejected(client, auth_headers, params):
+    resp = client.get("/api/v1/notes", headers=auth_headers(), params=params)
+    assert resp.status_code == 422

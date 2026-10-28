@@ -18,6 +18,18 @@ class Importance(StrEnum):
     critical = "critical"
 
 
+class SortBy(StrEnum):
+    created_at = "created_at"
+    updated_at = "updated_at"
+    title = "title"
+    importance = "importance"
+
+
+class Order(StrEnum):
+    asc = "asc"
+    desc = "desc"
+
+
 class NoteCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

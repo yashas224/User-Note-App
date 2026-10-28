@@ -33,6 +33,7 @@ class Note(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
 
     owner = relationship("User", back_populates="notes")
+    shares = relationship("NoteShare", back_populates="note", passive_deletes=True)
 
     __table_args__ = (
         Index("ix_notes_owner_deleted", "owner_id", "deleted_at"),
