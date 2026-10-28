@@ -4,7 +4,7 @@ A secure note-taking app: FastAPI backend, Streamlit frontend, SQLite storage.
 
 ## Features
 
-- **Accounts** – register/login with Argon2id-hashed passwords (min 12 chars), case-insensitive unique usernames, 30-min JWTs, rate-limited auth endpoints.
+- **Accounts** – register/login with Argon2id-hashed passwords (min 5 chars), case-insensitive unique usernames, 30-min JWTs, rate-limited auth endpoints.
 - **Notes** – create, view, edit and delete your own notes. Each note has a title, body, status (`draft`, `in_progress`, `completed`, `archived`) and importance (`low`, `normal`, `high`, `critical`).
 - **Filter, search & sort** – filter by status/importance, search text, sort by field and order, paginate.
 - **Trash & restore** – deleting is a soft delete; deleted notes move to Trash and can be restored.

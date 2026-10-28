@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    PASSWORD_MIN_LENGTH: int = 12
+    PASSWORD_MIN_LENGTH: int = 5
     # Where share links point: the Streamlit app, which renders ?share=<token>.
     PUBLIC_BASE_URL: str = "http://localhost:8501"
 

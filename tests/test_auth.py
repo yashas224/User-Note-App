@@ -26,7 +26,7 @@ def test_duplicate_username_case_insensitive(client):
 
 
 def test_short_password_rejected(client):
-    resp = client.post(REGISTER, json={"username": "alex", "password": "short"})
+    resp = client.post(REGISTER, json={"username": "alex", "password": "abcd"})
     assert resp.status_code == 422
 
 
