@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" role="img" aria-label="Secure notes illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="300" rx="20" fill="url(#bg)"/>
+  <circle cx="90" cy="60" r="70" fill="#fff" opacity="0.08"/>
+  <circle cx="720" cy="260" r="110" fill="#fff" opacity="0.08"/>
+
+  <!-- Back note -->
+  <g transform="rotate(-8 330 150)">
+    <rect x="250" y="55" width="170" height="200" rx="12" fill="#fde68a"/>
+  </g>
+  <!-- Front note -->
+  <rect x="300" y="45" width="190" height="215" rx="12" fill="#fff"/>
+  <rect x="300" y="45" width="190" height="34" rx="12" fill="#e0e7ff"/>
+  <rect x="300" y="65" width="190" height="14" fill="#e0e7ff"/>
+  <g fill="#c7d2fe">
+    <rect x="322" y="100" width="140" height="10" rx="5"/>
+    <rect x="322" y="125" width="120" height="10" rx="5"/>
+    <rect x="322" y="150" width="146" height="10" rx="5"/>
+    <rect x="322" y="175" width="90" height="10" rx="5"/>
+  </g>
+  <!-- Status chips -->
+  <rect x="322" y="210" width="62" height="22" rx="11" fill="#dcfce7"/>
+  <rect x="392" y="210" width="50" height="22" rx="11" fill="#fee2e2"/>
+
+  <!-- Lock badge -->
+  <circle cx="490" cy="240" r="42" fill="#1e1b4b"/>
+  <path d="M474 236 v-12 a16 16 0 0 1 32 0 v12" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <rect x="468" y="234" width="44" height="32" rx="6" fill="#fff"/>
+  <circle cx="490" cy="248" r="5" fill="#1e1b4b"/>
+  <rect x="488" y="250" width="4" height="9" rx="2" fill="#1e1b4b"/>
+
+  <!-- Share link -->
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity="0.9">
+    <rect x="575" y="110" width="50" height="26" rx="13"/>
+    <rect x="610" y="130" width="50" height="26" rx="13"/>
+  </g>
+</svg>

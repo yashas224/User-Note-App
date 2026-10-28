@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 
 from user_note.frontend import (
@@ -8,6 +10,8 @@ from user_note.frontend import (
     trash_ui,
 )
 from user_note.frontend.common import logout
+
+HERO_IMAGE = Path(__file__).parent / "assets" / "hero.svg"
 
 st.set_page_config(page_title="Notes", page_icon="📝")
 
@@ -20,6 +24,7 @@ st.title("📝 Notes")
 
 token = st.session_state.get("token")
 if not token:
+    st.image(HERO_IMAGE, width="stretch")
     auth_ui.render()
     st.stop()
 
