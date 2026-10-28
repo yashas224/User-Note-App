@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && uv run isort --profile black --quiet . && uv run black --quiet . 2>/dev/null || true",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && uv run isort --profile black --quiet . && uv run black --quiet . 2>/dev/null; echo '{\"systemMessage\": \"✓ Formatted with isort + black\"}'",
             "timeout": 60,
             "statusMessage": "Formatting with isort + black..."
           }

@@ -15,4 +15,5 @@ if [ $rc -ne 0 ] && [ $rc -ne 5 ]; then
   echo "$out" | tail -40 >&2
   exit 2
 fi
+echo "{\"systemMessage\": \"✓ isort + black + pytest passed ($(basename "$f"))\"}"
 exit 0
