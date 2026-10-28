@@ -25,5 +25,18 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.pydantic.dev)",
+      "WebFetch(domain:docs.streamlit.io)",
+      "WebFetch(domain:pydantic.dev)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(uv run *)"
+    ]
+  },
+  "enabledPlugins": {
+    "github@anthropic-plugin-directory": true
   }
 }
