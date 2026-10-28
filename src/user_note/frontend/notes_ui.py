@@ -105,7 +105,8 @@ def render_list(token: str) -> None:
     if not ok:
         return
     if not notes:
-        st.info("No notes match." if any(filters.values()) else "No notes yet.")
+        filtered = any(filters[k] for k in ("search", "status", "importance"))
+        st.info("No notes match." if filtered else "No notes yet.")
     for note in notes:
         with st.container(border=True):
             if st.session_state.get("editing_id") == note["id"]:

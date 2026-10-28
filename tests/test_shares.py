@@ -120,3 +120,75 @@ def test_invalid_expiry_rejected(client, auth_headers):
         headers=headers,
     )
     assert resp.status_code == 422
+
+
+def test_never_expiring_link(client, auth_headers):
+    headers = auth_headers()
+    share = _share(client, headers, _note(client, headers)["id"], expires_in_days=None)
+    assert share["expires_at"] is None
+    assert _public(client, share).status_code == 200
+
+
+def test_default_expiry_is_seven_days(client, auth_headers):
+    headers = auth_headers()
+    share = _share(client, headers, _note(client, headers)["id"])
+    expires = datetime.fromisoformat(share["expires_at"])
+    assert (
+        timedelta(days=6, hours=23) < expires - datetime.now(UTC) <= timedelta(days=7)
+    )
+
+
+def test_each_link_has_unique_token(client, auth_headers):
+    headers = auth_headers()
+    note = _note(client, headers)
+    assert _token(_share(client, headers, note["id"])) != _token(
+        _share(client, headers, note["id"])
+    )
+
+
+def test_revoke_is_idempotent_and_listed(client, auth_headers):
+    headers = auth_headers()
+    note = _note(client, headers)
+    share = _share(client, headers, note["id"])
+    url = f"/api/v1/notes/{note['id']}/shares/{share['id']}"
+    assert client.delete(url, headers=headers).status_code == 204
+    assert client.delete(url, headers=headers).status_code == 204
+    [listed] = client.get(f"/api/v1/notes/{note['id']}/shares", headers=headers).json()
+    assert listed["is_active"] is False and listed["revoked_at"] is not None
+
+
+def test_revoke_share_from_other_note_fails(client, auth_headers):
+    headers = auth_headers()
+    first, second = _note(client, headers), _note(client, headers)
+    share = _share(client, headers, first["id"])
+    resp = client.delete(
+        f"/api/v1/notes/{second['id']}/shares/{share['id']}", headers=headers
+    )
+    assert resp.status_code == 404
+    assert _public(client, share).status_code == 200
+
+
+def test_restored_note_link_works_again(client, auth_headers):
+    headers = auth_headers()
+    note = _note(client, headers)
+    share = _share(client, headers, note["id"])
+    client.delete(f"/api/v1/notes/{note['id']}", headers=headers)
+    client.post(f"/api/v1/notes/{note['id']}/restore", headers=headers)
+    assert _public(client, share).status_code == 200
+
+
+def test_sharing_requires_auth(client, auth_headers):
+    note = _note(client, auth_headers())
+    base = f"/api/v1/notes/{note['id']}/shares"
+    assert client.post(base, json={}).status_code == 401
+    assert client.get(base).status_code == 401
+
+
+def test_public_response_reflects_edits(client, auth_headers):
+    headers = auth_headers()
+    note = _note(client, headers)
+    share = _share(client, headers, note["id"])
+    client.patch(
+        f"/api/v1/notes/{note['id']}", json={"body": "Updated"}, headers=headers
+    )
+    assert _public(client, share).json()["body"] == "Updated"

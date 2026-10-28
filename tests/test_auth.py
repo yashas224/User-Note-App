@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import select
 
 from user_note.backend.models import User
@@ -59,3 +60,76 @@ def test_login_rate_limited(client):
     creds = {"username": "nobody", "password": PASSWORD}
     codes = [client.post(LOGIN, json=creds).status_code for _ in range(11)]
     assert codes[-1] == 429
+
+
+def _token_for(client, username: str = "alex") -> str:
+    client.post(REGISTER, json={"username": username, "password": PASSWORD})
+    creds = {"username": username, "password": PASSWORD}
+    return client.post(LOGIN, json=creds).json()["access_token"]
+
+
+def test_expired_token_rejected(client, session_factory):
+    from datetime import UTC, datetime, timedelta
+
+    import jwt
+
+    from user_note.backend.core.config import settings
+
+    _token_for(client)
+    with session_factory() as db:
+        user_id = db.scalar(select(User.id))
+    expired = jwt.encode(
+        {"sub": str(user_id), "exp": datetime.now(UTC) - timedelta(seconds=1)},
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+    assert (
+        client.get(ME, headers={"Authorization": f"Bearer {expired}"}).status_code
+        == 401
+    )
+
+
+def test_disabled_user_cannot_authenticate(client, session_factory):
+    token = _token_for(client)
+    with session_factory() as db:
+        db.scalar(select(User)).is_active = False
+        db.commit()
+    resp = client.post(LOGIN, json={"username": "alex", "password": PASSWORD})
+    assert resp.status_code == 401
+    assert resp.json() == {"detail": "Invalid username or password"}
+    assert (
+        client.get(ME, headers={"Authorization": f"Bearer {token}"}).status_code == 401
+    )
+
+
+def test_token_for_deleted_user_rejected(client, session_factory):
+    token = _token_for(client)
+    with session_factory() as db:
+        db.delete(db.scalar(select(User)))
+        db.commit()
+    assert (
+        client.get(ME, headers={"Authorization": f"Bearer {token}"}).status_code == 401
+    )
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"username": "ab", "password": PASSWORD},
+        {"username": "bad name!", "password": PASSWORD},
+        {"username": "alex", "password": "x" * 129},
+        {"username": "alex", "password": PASSWORD, "is_active": False},
+    ],
+)
+def test_invalid_registration_rejected(client, payload):
+    assert client.post(REGISTER, json=payload).status_code == 422
+
+
+def test_register_rate_limited(client):
+    codes = [
+        client.post(
+            REGISTER, json={"username": f"user{i}", "password": PASSWORD}
+        ).status_code
+        for i in range(11)
+    ]
+    assert codes[:10] == [201] * 10 and codes[-1] == 429
